@@ -1,0 +1,103 @@
+
+func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	//select query
+
+	utils.JasonResponseHandler(w, http.StatusOK, id)
+}
+
+func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
+	var users user
+	var err error
+	id := r.FormValue("id")
+	users.ID, err = strconv.Atoi(id)
+
+	if err != nil {
+		utils.HandleErrors(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	users.Name = r.FormValue("name")
+
+	//insertion query
+
+	utils.JasonResponseHandler(w, http.StatusBadRequest, users)
+}
+
+func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	id := r.PathValue("id")
+	//display
+	//select query
+	user := user{
+		ID:   1,
+		Name: "John Doe",
+	}
+
+	//save the change
+
+	user.ID, err = strconv.Atoi(id)
+
+	if err != nil {
+		utils.HandleErrors(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	user.Name = r.FormValue("name")
+
+	if r.FormValue("name") == "" {
+		user.Name = r.FormValue("name")
+	}
+	utils.JasonResponseHandler(w, http.StatusBadRequest, user)
+}
+
+func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	//delete query
+	utils.JasonResponseHandler(w, http.StatusOK, "Deleted")
+}
+
+
+
+
+
+//vendors 
+
+
+func ShowVendorHandler(w http.ResponseWriter, r *http.Request) {
+	Vendor := Vendors{
+		Name: "John Doe", Description: "V1",
+	}
+
+	Vendor.Name = r.PathValue("name")
+	//select query
+	utils.JasonResponseHandler(w, http.StatusOK, Vendor)
+}
+
+func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
+	var vendor Vendors
+	vendor.Name = r.FormValue("name")
+
+	//insertion query
+
+	utils.JasonResponseHandler(w, http.StatusBadRequest, vendor)
+}
+
+func UpdateVendorHandler(w http.ResponseWriter, r *http.Request) {
+	//display
+	//select query
+	Vendor := Vendors{
+		Name:        "John Doe",
+		Description: "V5",
+	}
+	Vendor.Name = r.PathValue("name")
+
+	//save the change
+
+	if r.FormValue("description") != "" {
+		Vendor.Description = r.FormValue("description")
+	}
+	utils.JasonResponseHandler(w, http.StatusBadRequest, Vendor)
+}
+
+func DeleteVendorHandler(w http.ResponseWriter, r *http.Request) {
+	//delete query
+	utils.JasonResponseHandler(w, http.StatusOK, "Deleted")
+}
