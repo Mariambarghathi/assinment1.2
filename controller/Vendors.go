@@ -77,14 +77,7 @@ func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
 
 	vendor.Name = r.FormValue("name")
 	vendor.Description = r.FormValue("description")
-
-	vendor.ID = uuid.New()
-
-	if vendor.Name == "" || vendor.Description == "" {
-		utils.HandleErrors(w, http.StatusBadRequest, "Name and description are required")
-		return
-	}
-
+	fmt.Println(vendor.Name, vendor.Description)
 	vendor.ID = uuid.New()
 
 	if vendor.Name == "" || vendor.Description == "" {
@@ -107,7 +100,7 @@ func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
 
 	query, args, err := QB.
 		Insert("vendors").
-		Columns("id", "name", "img", "description").
+		Columns("id", "img", "name", "description").
 		Values(vendor.ID, vendor.Img, vendor.Name, vendor.Description).
 		Suffix(fmt.Sprintf("RETURNING %s", strings.Join(vendor_columns, ", "))).
 		ToSql()

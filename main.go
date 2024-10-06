@@ -2,14 +2,12 @@ package main
 
 import (
 	"backend-project/controller"
-	"errors"
 	"log"
 	"net/http"
 	"os"
 	"path"
 
 	"github.com/go-michi/michi"
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
@@ -49,21 +47,6 @@ func main() {
 	defer db.Close()
 	controller.SetDB(db)
 
-	//auto migration
-	mig, err := migrate.New(
-		"file://"+GetRootpath(os.Getenv("MIGRATIONS_ROOT")),
-		os.Getenv("DATABASE_URL"),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := mig.Up(); err != nil {
-		if !errors.Is(err, migrate.ErrNoChange) {
-			log.Fatal(err)
-		}
-		log.Printf("migrations: %s", err.Error())
-	}
-
 	//routing
 	r := michi.NewRouter()
 	r.Route("/", func(sub *michi.Router) {
@@ -77,10 +60,10 @@ func main() {
 
 		//VENDORS
 		sub.HandleFunc("GET vendor", controller.IndexVendorHandler)
-		sub.HandleFunc("GET vendor/{name}", controller.ShowVendorHandler)
+		sub.HandleFunc("GET vendor/{id}", controller.ShowVendorHandler)
 		sub.HandleFunc("POST vendor", controller.SaveVendorHandler)
-		sub.HandleFunc("PUT vendor/{name}", controller.UpdateVendorHandler)
-		sub.HandleFunc("DELETE vendor/{name}", controller.DeleteVendorHandler)
+		sub.HandleFunc("PUT vendor/{id}", controller.UpdateVendorHandler)
+		sub.HandleFunc("DELETE vendor/{id}", controller.DeleteVendorHandler)
 	})
 	// Wrap router with the CORS middleware
 	http.ListenAndServe(":8000", enableCorsMiddleware(r))
