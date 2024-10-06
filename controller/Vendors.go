@@ -3,7 +3,6 @@ package controller
 import (
 	utils "backend-project/Utils"
 	"backend-project/models"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -17,6 +16,7 @@ var (
 	vendor_columns = []string{
 		"id",
 		"name",
+		"img",
 		"description",
 		"created_at",
 		"updated_at",
@@ -48,10 +48,10 @@ func IndexVendorHandler(w http.ResponseWriter, r *http.Request) {
 
 func ShowVendorHandler(w http.ResponseWriter, r *http.Request) {
 	var vendor models.Vendors
-	name := r.PathValue("name")
+	id := r.PathValue("id")
 	query, args, err := QB.Select(strings.Join(vendor_columns, ", ")).
 		From("vendors").
-		Where("name = ?", name).
+		Where("id = ?", id).
 		ToSql()
 	if err != nil {
 		utils.HandleErrors(w, http.StatusInternalServerError, err.Error())
@@ -75,10 +75,14 @@ func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
 
 	var vendor models.Vendors
 
-	err := json.NewDecoder(r.Body).Decode(&vendor)
-	if err != nil || vendor.Name == "" || vendor.Description == "" {
-		vendor.Name = r.FormValue("name")
-		vendor.Description = r.FormValue("description")
+	vendor.Name = r.FormValue("name")
+	vendor.Description = r.FormValue("description")
+
+	vendor.ID = uuid.New()
+
+	if vendor.Name == "" || vendor.Description == "" {
+		utils.HandleErrors(w, http.StatusBadRequest, "Name and description are required")
+		return
 	}
 
 	vendor.ID = uuid.New()
@@ -88,10 +92,23 @@ func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	file, fileHeader, err := r.FormFile("img")
+	if err != nil && err != http.ErrMissingFile {
+		utils.HandleErrors(w, http.StatusBadRequest, "Invalid file")
+		return
+	} else if err == nil {
+		defer file.Close()
+		imageName, err := utils.SaveImageFile(file, "vendors", fileHeader.Filename)
+		if err != nil {
+			utils.HandleErrors(w, http.StatusInternalServerError, "Error saving image")
+		}
+		vendor.Img = &imageName
+	}
+
 	query, args, err := QB.
 		Insert("vendors").
-		Columns("id", "name", "description").
-		Values(vendor.ID, vendor.Name, vendor.Description).
+		Columns("id", "name", "img", "description").
+		Values(vendor.ID, vendor.Img, vendor.Name, vendor.Description).
 		Suffix(fmt.Sprintf("RETURNING %s", strings.Join(vendor_columns, ", "))).
 		ToSql()
 	if err != nil {
@@ -109,10 +126,10 @@ func SaveVendorHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdateVendorHandler(w http.ResponseWriter, r *http.Request) {
 	var vendor models.Vendors
-	name := r.PathValue("name")
+	id := r.PathValue("id")
 	query, args, err := QB.Select(vendor_columns...).
 		From("vendors").
-		Where("name = ?", name).
+		Where("id = ?", id).
 		ToSql()
 	if err != nil {
 		utils.HandleErrors(w, http.StatusInternalServerError, err.Error())
@@ -132,11 +149,11 @@ func UpdateVendorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query, args, err = QB.
-		Update("users").
+		Update("vendors").
 		Set("name", vendor.Name).
-		Set("descrition", vendor.Description).
+		Set("description", vendor.Description).
 		Set("updated_at", time.Now()).
-		Where(squirrel.Eq{"name": vendor.Name}).
+		Where(squirrel.Eq{"id": vendor.ID}).
 		Suffix(fmt.Sprintf("RETURNING %s", strings.Join(vendor_columns, ", "))).
 		ToSql()
 	if err != nil {
@@ -153,10 +170,10 @@ func UpdateVendorHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteVendorHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
+	id := r.PathValue("id")
 	// Use QB to build the delete query
 	query, args, err := QB.Delete("vendors").
-		Where("name = ?", name).
+		Where("id = ?", id).
 		ToSql()
 	if err != nil {
 		utils.HandleErrors(w, http.StatusInternalServerError, "Error building query: "+err.Error())
@@ -169,7 +186,7 @@ func DeleteVendorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	//	w.WriteHeader(http.StatusNoContent)
+	utils.JasonResponseHandler(w, http.StatusGone, "deleted successfully")
 
-	w.Write([]byte("Vendor deleted successfully"))
 }

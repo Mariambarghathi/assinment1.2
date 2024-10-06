@@ -31,6 +31,19 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	file, fileHeader, err := r.FormFile("img")
+	if err != nil && err != http.ErrMissingFile {
+		utils.HandleErrors(w, http.StatusBadRequest, "Invalid file")
+		return
+	} else if err == nil {
+		defer file.Close()
+		imageName, err := utils.SaveImageFile(file, "users", fileHeader.Filename)
+		if err != nil {
+			utils.HandleErrors(w, http.StatusInternalServerError, "Error saving image")
+		}
+		user.Img = &imageName
+	}
+
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		utils.HandleErrors(w, http.StatusInternalServerError, "Error hashing password")
